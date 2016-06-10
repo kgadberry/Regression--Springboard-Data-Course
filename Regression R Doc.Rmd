@@ -1,0 +1,173 @@
+---
+title: "Linear Regression"
+author: "Kathryn Gadberry"
+date: "May 28, 2016"
+output: html_document
+---
+# State Voting Model 
+```{r}
+getwd()
+list.files() 
+list.files("dataSets")
+```
+
+```{r}
+states.data <- readRDS("dataSets/states.rds")
+states.info <- data.frame(attributes(states.data)[c("names", "var.labels")])
+tail(states.info, 8)
+```
+
+```{r}
+sts.ex.sat <-subset(states.data, select = c("expense", "csat"))
+summary(sts.ex.sat)
+``` 
+
+
+```{r}
+cor(sts.ex.sat)
+```
+
+
+```{r}
+plot(sts.ex.sat)
+```
+
+```{r}
+sat.mod <-lm(csat ~ expense, data = states.data)
+summary(sat.mod)
+```
+
+```{r}
+summary(lm(csat ~ expense + percent, data = states.data))
+class(sat.mod)
+confint(sat.mod)
+```
+
+```{r}
+hist(residuals(sat.mod))
+par(mar = c(4, 4, 2, 2), mfrow = c(1,2))
+plot(sat.mod, which = c(1, 2))
+```
+
+Comparing Voting Models
+
+```{r}
+sat.voting.mod <- lm(csat ~ expense + house +senate, data = na.omit(states.data))
+sat.mod <- update(sat.mod, data = na.omit(states.data))
+anova(sat.mod, sat.voting.mod)
+coef(summary(sat.voting.mod))
+```
+
+Modeling Interaction
+```{r}
+sat.expense.by.percent <- lm(csat ~expense*income, data = states.data)
+coef(summary(sat.expense.by.percent))
+```
+
+Regression with Categorical Predictors
+```{r}
+str(states.data$region)
+states.data$region <- factor(states.data$region)
+sat.region <- lm(csat ~ region,
+                 data=states.data) 
+coef(summary(sat.region)) 
+anova(sat.region) 
+``` 
+ 
+ Reference Groups and Contrasts
+```{r}
+contrasts(states.data$region)
+# change the reference group
+coef(summary(lm(csat ~ C(region, base=4),
+                data=states.data)))
+# change the coding scheme
+coef(summary(lm(csat ~ C(region, contr.helmert),
+                data=states.data)))
+```
+
+
+# Exercise One: Least Squares Regression
+Review data for fitting. 
+```{r}
+states.info
+sts.en.met <- subset(states.data, select = c("metro", "energy"))
+summary(sts.en.met)
+cor(sts.en.met)
+plot(sts.en.met)
+```
+
+Remove Missing Data
+```{r}
+is.na(sts.en.met)
+sts.en.met <- na.omit(sts.en.met)
+cor(sts.en.met)
+```
+
+Create and Interpret Model Summary
+```{r}
+energy.mod <- lm(energy ~ metro, data = states.data)
+summary(energy.mod)
+summary(lm(energy ~ metro, data = states.data))
+```
+
+Examine the model objects and use function methods. More info about fit.
+```{r}
+class(energy.mod)
+names(energy.mod)
+methods(class = class(energy.mod))[1:9]
+```
+
+```{r}
+confint(energy.mod)
+hist(residuals(energy.mod))
+```
+
+Plot the Model. 
+```{r}
+par(mar = c(4, 4, 2, 2), mfrow = c(1, 2)) 
+plot(energy.mod, which = c(1, 2))
+```
+
+Adding variables to model: Metro, Miles, Density, Area, Population
+```{r}
+energy.mod1 <- lm(energy ~ metro + miles + density + area + pop, data = states.data)
+summary(energy.mod1)
+#Remove Density from variables
+energy.mod2 <- lm(energy ~ metro + miles + area + pop, data = states.data)
+summary(energy.mod2)
+#Both R squared and Adjusted R squared increased
+```
+The adjusted R2 decreases with any variation from Model 2 
+```{r}
+energy.mod3 <-lm(energy ~ metro + miles + area, data = states.data)
+summary(energy.mod3)
+
+energy.mod4 <- lm(energy ~ miles + area + pop, data = states.data)
+summary(energy.mod4)
+
+energy.mod4 <- lm(energy ~ miles + area, data = states.data)
+summary(energy.mod4)
+``` 
+
+
+# Exercise 2: Interactions and Factors
+
+Add and test an interaction term.
+```{r}
+energy.metro.by.green <- lm(energy ~ metro*green, data = states.data)
+coef(summary(energy.metro.by.green))
+summary(energy.metro.by.green)
+``` 
+
+Test regression with categorical predictors by adding region. 
+```{r}
+str(states.data$region)
+states.data$region <- factor(states.data$region)
+energy.region <- lm(energy ~ metro + region,
+                 data=states.data) 
+
+
+summary(energy.region)
+coef(summary(energy.region)) 
+anova(energy.region) 
+```  
